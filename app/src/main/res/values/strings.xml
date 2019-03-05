@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Color Picker</string>
+    <string name="colorview">ColorView</string>
+    <string name="save_color">Save Color</string>
+    <string name="color_picker">Color Picker</string>
+    <string name="favorites">Favorites</string>
+    <string name="startValue">0</string>
+    <string name="name_your_color">Name Your Color</string>
+    <string name="color">Color</string>
+    <string name="save">Save</string>
+    <string name="save_color_to_favorites">Save Color to Favorites</string>
+    <string name="preference_file_key">com.example.rgbcolorpicker.PREFERENCE_FILE_KEY</string>
+</resources>

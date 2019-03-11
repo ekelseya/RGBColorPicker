@@ -12,6 +12,6 @@
           android:icon="@drawable/favorite"
           android:title="@string/favorites"
           app:actionViewClass="android.widget.Spinner"
-          app:showAsAction="never|withText" />
+          app:showAsAction="never|withText" android:visible="true" android:enabled="true" android:checkable="true"/>
 
 </menu>

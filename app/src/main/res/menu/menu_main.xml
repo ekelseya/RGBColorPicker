@@ -2,16 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:app="http://schemas.android.com/apk/res-auto"
       xmlns:tools="http://schemas.android.com/tools"
-      tools:context="com.example.colorpicker.com.example.rgbcolorpicker.MainActivity">
+      tools:context="com.example.rgbcolorpicker.MainActivity">
     <item android:id="@+id/save"
           android:icon="@drawable/save"
           android:title="@string/save"
           android:orderInCategory="100"
           app:showAsAction="never|withText"/>
-    <item android:id="@+id/spinner"
-          android:icon="@drawable/favorite"
+    <item android:id="@+id/favorites"
           android:title="@string/favorites"
-          app:actionViewClass="android.widget.Spinner"
-          app:showAsAction="never|withText" android:visible="true" android:enabled="true" android:checkable="true"/>
-
+          android:icon="@drawable/favorite"
+          app:showAsAction="ifRoom|withText"/>
 </menu>

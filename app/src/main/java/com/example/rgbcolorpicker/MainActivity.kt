@@ -1,21 +1,25 @@
 package com.example.rgbcolorpicker
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.support.annotation.RequiresApi
 import android.support.v7.app.AppCompatActivity
 import android.text.Editable
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.View.VISIBLE
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import kotlinx.android.synthetic.main.activity_main.*
-import java.io.File
-import java.io.FileInputStream
-import java.io.ObjectInputStream
+import java.io.*
+
+
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,13 +32,17 @@ class MainActivity : AppCompatActivity() {
         "Reddish", 228.toString(), 18.toString(), 38.toString(),
         "Its a purple", 200.toString(), 10.toString(), 200.toString())
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        setSupportActionBar(this.findViewById(R.id.my_toolbar))
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    private var arrayColorIntent = arrayListOf<Int>(0, 0, 0)
 
-        val savedColorNames = mutableListOf<String>()
+    var redValue = 255
+    var greenValue = 255
+    var blueValue = 255
+
+    private var saveColorName = ""
+
+    val savedColorNames = mutableListOf<String>()
+
+    private fun loadNames(){
         var count1 = 0
         while (count1 < savedFavorites.size) {
             if (count1 % 4 == 0) {
@@ -42,8 +50,11 @@ class MainActivity : AppCompatActivity() {
             }
             count1 += 1
         }
+    }
 
-        val savedRedValues = mutableListOf<String>()
+    val savedRedValues = mutableListOf<String>()
+
+    private fun loadRed(){
         var count2 = 0
         while (count2 < savedFavorites.size) {
             if (count2 % 4 == 1) {
@@ -51,8 +62,11 @@ class MainActivity : AppCompatActivity() {
             }
             count2 += 1
         }
+    }
 
-        val savedGreenValues = mutableListOf<String>()
+    val savedGreenValues = mutableListOf<String>()
+
+    private fun loadGreen(){
         var count3 = 0
         while (count3 < savedFavorites.size) {
             if (count3 % 4 == 2) {
@@ -60,9 +74,11 @@ class MainActivity : AppCompatActivity() {
             }
             count3 += 1
         }
+    }
 
+    val savedBlueValues = mutableListOf<String>()
 
-        val savedBlueValues = mutableListOf<String>()
+    private fun loadBlue(){
         var count4 = 0
         while (count4 < savedFavorites.size) {
             if (count4 % 4 == 3) {
@@ -70,107 +86,114 @@ class MainActivity : AppCompatActivity() {
             }
             count4 += 1
         }
-        val textBoxRed = findViewById<EditText>(R.id.editTextRed)
-        val textBoxGreen = findViewById<EditText>(R.id.editTextGreen)
-        val textBoxBlue = findViewById<EditText>(R.id.editTextBlue)
+    }
 
-        val seekBarRed = findViewById<SeekBar>(R.id.seekBarRed)
-        val seekBarGreen = findViewById<SeekBar>(R.id.seekBarGreen)
-        val seekBarBlue = findViewById<SeekBar>(R.id.seekBarBlue)
+    private fun View.hideKeyboard() {
+        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(windowToken, 0)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        setSupportActionBar(this.findViewById(R.id.my_toolbar))
+
+        val favFile = File(filesDir, "favorites")
+        if(favFile.exists()){
+            ObjectInputStream(FileInputStream(favFile)).use { it ->
+                val loadedFavorites = it.readObject()
+                when (loadedFavorites) {
+                    is MutableList<*> -> Log.i("Load", "Deserialized")
+                    else -> Log.i("Load", "Failed")
+                }
+                savedFavorites = loadedFavorites as MutableList<String>
+            }
+        }
+
+        val buttonBlend = findViewById<Button>(R.id.button_blend)
+
+        val info = intent.extras
+        if (info != null) {
+            if (info.containsKey("color")) {
+                button_blend!!.visibility = VISIBLE
+            }
+        }
+
+        buttonBlend.setOnClickListener {
+            val i = Intent()
+            i.putExtra("red", arrayColorIntent[0])
+            i.putExtra("green", arrayColorIntent[1])
+            i.putExtra("blue", arrayColorIntent[2])
+
+            setResult(RESULT_OK, i)
+
+            finish()
+            }
 
         val colorView = findViewById<ImageView>(R.id.imageView)
 
-        var redValue: Int
-        var greenValue: Int
-        var blueValue: Int
-
-        var saveColorName: String
-        val textBoxName = findViewById<EditText>(R.id.nameText)
-        val buttonSave:Button = findViewById(R.id.buttonSave)
-
-        fun View.hideKeyboard() {
-            val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(windowToken, 0)
-        }
-
-        fun colorSet(){
-            redValue = seekBarRed.progress
-            greenValue = seekBarGreen.progress
-            blueValue = seekBarBlue.progress
-
-            colorView.setBackgroundColor(Color.rgb(redValue, greenValue, blueValue))
-        }
-
-        val filePath = File(filesDir, "favorites")
-        val favFile = File(filePath, "favorites.ser")
-        val fileExists = favFile.exists()
-        if (fileExists) {
-            ObjectInputStream(FileInputStream(favFile)).use { savedFavorites = it.readObject() as MutableList<String> }
-        }
-
+        val textBoxRed = findViewById<EditText>(R.id.editTextRed)
         textBoxRed.setOnClickListener {
             this@MainActivity.seekBarRed.progress = Integer.parseInt(textBoxRed.text.toString())
             textBoxRed.hideKeyboard()
         }
 
-        seekBarRed.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                // Display the current progress of SeekBar
-                this@MainActivity.editTextRed.text = Editable.Factory.getInstance().newEditable(seekBarRed.progress.toString())
-
-                colorSet()
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar) {
-                textBoxName.text.clear()
-
-            }
-
-            override fun onStopTrackingTouch(seekBar: SeekBar) {
-                val redHex = java.lang.Integer.toHexString(seekBarRed.progress).format("%02")
-                val greenHex = java.lang.Integer.toHexString(seekBarGreen.progress).format("%02")
-                val blueHex = java.lang.Integer.toHexString(seekBarBlue.progress).format("%02")
-                val hexValue = "$redHex$greenHex$blueHex".toUpperCase()
-                Toast.makeText(this@MainActivity, "#$hexValue", Toast.LENGTH_LONG).show()
-            }
-        })
-
-        textBoxBlue.setOnClickListener {
-            this@MainActivity.seekBarBlue.progress = Integer.parseInt(textBoxBlue.text.toString())
-            textBoxBlue.hideKeyboard()
-        }
-
-        seekBarBlue.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                // Display the current progress of SeekBar
-                this@MainActivity.editTextBlue.text = Editable.Factory.getInstance().newEditable(seekBarBlue.progress.toString())
-
-                colorSet()
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar) {
-                textBoxName.text.clear()
-
-            }
-
-            override fun onStopTrackingTouch(seekBar: SeekBar) {
-                val redHex = java.lang.Integer.toHexString(seekBarRed.progress).format("%02")
-                val greenHex = java.lang.Integer.toHexString(seekBarGreen.progress).format("%02")
-                val blueHex = java.lang.Integer.toHexString(seekBarBlue.progress).format("%02")
-                val hexValue = "$redHex$greenHex$blueHex".toUpperCase()
-                Toast.makeText(this@MainActivity, "#$hexValue", Toast.LENGTH_LONG).show()
-            }
-        })
-
+        val textBoxGreen = findViewById<EditText>(R.id.editTextGreen)
         textBoxGreen.setOnClickListener {
             this@MainActivity.seekBarGreen.progress = Integer.parseInt(textBoxGreen.text.toString())
             textBoxGreen.hideKeyboard()
         }
 
+        val textBoxBlue = findViewById<EditText>(R.id.editTextBlue)
+        textBoxBlue.setOnClickListener {
+            this@MainActivity.seekBarBlue.progress = Integer.parseInt(textBoxBlue.text.toString())
+            textBoxBlue.hideKeyboard()
+        }
+
+        val textBoxName = findViewById<EditText>(R.id.nameText)
+        textBoxName.setOnClickListener {
+            saveColorName = textBoxName.text.toString()
+            textBoxName.hideKeyboard()
+        }
+
+        fun colorSet() {
+            redValue = seekBarRed.progress
+            greenValue = seekBarGreen.progress
+            blueValue = seekBarBlue.progress
+
+            colorView.setBackgroundColor(Color.rgb(redValue, greenValue, blueValue))
+
+            arrayColorIntent[0] = redValue
+            arrayColorIntent[1] = greenValue
+            arrayColorIntent[2] = blueValue
+
+        }
+
+        val seekBarRed = findViewById<SeekBar>(R.id.seekBarRed)
+        seekBarRed.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
+                this@MainActivity.editTextRed.text =
+                    Editable.Factory.getInstance().newEditable(seekBarRed.progress.toString())
+
+                colorSet()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                textBoxName.text.clear()
+
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+
+            }
+        })
+
+        val seekBarGreen = findViewById<SeekBar>(R.id.seekBarGreen)
         seekBarGreen.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                 // Display the current progress of SeekBar
-                this@MainActivity.editTextGreen.text = Editable.Factory.getInstance().newEditable(seekBarGreen.progress.toString())
+                this@MainActivity.editTextGreen.text =
+                    Editable.Factory.getInstance().newEditable(seekBarGreen.progress.toString())
 
                 colorSet()
             }
@@ -180,31 +203,47 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar) {
-                val redHex = java.lang.Integer.toHexString(seekBarRed.progress)
-                val greenHex = java.lang.Integer.toHexString(seekBarGreen.progress)
-                val blueHex = java.lang.Integer.toHexString(seekBarBlue.progress)
-                val hexValue = "$redHex$greenHex$blueHex".toUpperCase()
-                Toast.makeText(this@MainActivity, "#$hexValue", Toast.LENGTH_LONG).show()
+
             }
         })
 
-        textBoxName.setOnClickListener {
-            saveColorName = textBoxName.text.toString()
-            textBoxName.hideKeyboard()
-        }
+        val seekBarBlue = findViewById<SeekBar>(R.id.seekBarBlue)
+        seekBarBlue.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
+                // Display the current progress of SeekBar
+                this@MainActivity.editTextBlue.text =
+                    Editable.Factory.getInstance().newEditable(seekBarBlue.progress.toString())
 
-        buttonSave.setOnClickListener{
+                colorSet()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                textBoxName.text.clear()
+
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+
+            }
+        })
+
+        val buttonSave: Button = findViewById(R.id.buttonSave)
+        buttonSave.setOnClickListener {
             saveColorName = textBoxName.text.toString()
 
-            if(saveColorName != "") {
+            if (saveColorName != "") {
                 redValue = seekBarRed.progress
                 greenValue = seekBarGreen.progress
                 blueValue = seekBarBlue.progress
 
-                if (savedFavorites.contains(saveColorName)){
+                arrayColorIntent[0] = redValue
+                arrayColorIntent[1] = greenValue
+                arrayColorIntent[2] = blueValue
+
+                if (savedFavorites.contains(saveColorName)) {
+
                     Toast.makeText(this, "You already have this color in favorites!", Toast.LENGTH_SHORT).show()
-                }
-                else {
+                } else {
                     savedFavorites.plusAssign(element = saveColorName)
                     savedFavorites.plusAssign(element = redValue.toString())
                     savedFavorites.plusAssign(element = greenValue.toString())
@@ -214,30 +253,32 @@ class MainActivity : AppCompatActivity() {
                     savedRedValues.plusAssign(redValue.toString())
                     savedGreenValues.plusAssign(greenValue.toString())
                     savedBlueValues.plusAssign(blueValue.toString())
-                    // TODO make this actually save to file
-                    //ObjectOutputStream(FileOutputStream(favFile)).use { it.writeObject(savedFavorites) }
-                    //Toast.makeText(this, "New color saved to file!", Toast.LENGTH_SHORT).show()
-                    Toast.makeText(this, getString(R.string.new_color_set), Toast.LENGTH_SHORT).show()
-                    }
 
+                    Toast.makeText(this, getString(R.string.new_color_set), Toast.LENGTH_LONG).show()
                 }
-            else {
-                Toast.makeText(this, getString(R.string.error_name_color), Toast.LENGTH_SHORT).show()
-                }
+            } else {
+                Toast.makeText(this, getString(R.string.error_name_color), Toast.LENGTH_LONG).show()
             }
 
-        val spinnerFavorites = findViewById<Spinner>(R.id.spinnerTest)
+        }
+
+        val favSpin = findViewById<Spinner>(R.id.spinnerFavorite)
+        loadNames()
+        loadRed()
+        loadGreen()
+        loadBlue()
         val aa = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, savedColorNames)
         aa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerFavorites.adapter = aa
-        spinnerFavorites.setSelection(0)
+        favSpin.adapter = aa
+        favSpin.setSelection(0)
 
-        spinnerFavorites.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+        favSpin.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {
                 Toast.makeText(this@MainActivity, "Nothing Selected", Toast.LENGTH_LONG).show()
             }
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+
                 redValue = savedRedValues[position].toInt()
                 greenValue = savedGreenValues[position].toInt()
                 blueValue = savedBlueValues[position].toInt()
@@ -246,44 +287,41 @@ class MainActivity : AppCompatActivity() {
                 seekBarGreen.progress = Integer.parseInt(savedGreenValues[position])
                 seekBarBlue.progress = Integer.parseInt(savedBlueValues[position])
 
-                if(position > 0)
-                    textBoxName.setText(savedColorNames[position])
-
-                colorView.setBackgroundColor(Color.rgb(redValue, greenValue, blueValue))            }
+                if (position > 0) {
+                    nameText?.setText(savedColorNames[position])
+                    imageView?.setBackgroundColor(Color.rgb(redValue, greenValue, blueValue))
+                }
+                favSpin.visibility = View.INVISIBLE
+            }
         }
 
+
     }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
-        return super.onCreateOptionsMenu(menu)
+        return true
     }
 
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
         R.id.save -> {
-            // TODO set to save
+            val favFile = File(filesDir, "favorites")
+            ObjectOutputStream(FileOutputStream(favFile)).use { it -> it.writeObject(savedFavorites) }
 
             Toast.makeText(this, "New Color Saved!", Toast.LENGTH_SHORT).show()
 
             true
         }
 
-        R.id.spinner -> {
-            // TODO change from spinner to select color
+        R.id.favorites -> {
+            spinnerFavorite?.visibility = View.VISIBLE
+
             true
         }
-
         else -> {
             // Recommended overflow
             super.onOptionsItemSelected(item)
         }
     }
-
-/*    override fun onStop() {
-        val favFile = "favorites.ser"
-        ObjectOutputStream(FileOutputStream(favFile)).use{ it.writeObject(savedFavorites)}
-        super.onStop()
-    }*/
-
 }
